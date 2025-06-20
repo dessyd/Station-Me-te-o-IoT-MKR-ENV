@@ -1,0 +1,70 @@
+# ===================================================================
+# FICHIER .gitignore POUR PROJET ARDUINO IoT
+# ===================================================================
+# Ce fichier indique à Git quels fichiers et dossiers ignorer
+# ===================================================================
+
+# Fichiers de secrets (IMPORTANT: Ne jamais commiter!)
+arduino_secrets.h
+secrets.h
+*.secrets.*
+.env
+
+# Fichiers de compilation Arduino
+*.hex
+*.elf
+*.bin
+*.eep
+*.lss
+*.map
+*.sym
+
+# Dossiers de build
+build/
+.build/
+
+# Fichiers temporaires de l'IDE Arduino
+.DS_Store
+Thumbs.db
+*.tmp
+*.bak
+*.swp
+*~.nib
+
+# Fichiers de configuration IDE
+.vscode/
+.idea/
+*.sublime-*
+
+# Logs et fichiers de debug
+*.log
+debug/
+
+# Fichiers de sauvegarde
+*.orig
+*.backup
+*.pickle
+
+# Fichiers de configuration personnels
+config_local.h
+local_settings.h
+
+# Documentation générée
+docs/build/
+*.pdf
+
+# Fichiers de test
+test_results/
+*.test
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# Certificats et clés (par sécurité)
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
