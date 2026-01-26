@@ -12,13 +12,15 @@ Ce fichier README contient les instructions pour configurer et utiliser la stati
 ## Prérequis logiciels
 
 ### Arduino IDE
+
 - Arduino IDE 1.8.19 ou plus récent
 - Installation du support pour les cartes Arduino SAMD
 
 ### Bibliothèques requises
+
 Installez les bibliothèques suivantes via le gestionnaire de bibliothèques Arduino :
 
-```
+```text
 WiFiNINA              // Communication WiFi
 ArduinoMqttClient     // Client MQTT
 Arduino_MKRENV        // Shield MKR ENV (capteurs intégrés)
@@ -34,11 +36,13 @@ ArduinoLowPower       // Gestion du mode deep sleep
 **IMPORTANT:** Le projet utilise un système de fichier de secrets séparé pour protéger vos informations sensibles.
 
 1. **Copiez le fichier d'exemple :**
+
    ```bash
    cp arduino_secrets.h.example arduino_secrets.h
    ```
 
 2. **Éditez arduino_secrets.h** avec vos vraies informations :
+
    ```cpp
    #define SECRET_SSID "VotreSSIDWiFi"
    #define SECRET_PASSWORD "VotreMotDePasseWiFi"
@@ -69,12 +73,14 @@ Vous devez mettre en place un serveur UDP qui répond aux requêtes de provision
 ### 3. Configuration du serveur de provisionnement
 
 **Format de la requête** (envoyée par l'Arduino) :
-```
+
+```text
 [Adresse MAC]:[Token 4 octets]
 ```
 
 **Format de la réponse** (envoyée par le serveur) :
-```
+
+```text
 [ID appareil 1 octet][Token 4 octets][Adresse IP MQTT variable]
 ```
 
@@ -141,12 +147,14 @@ Modifiez les seuils selon vos besoins dans `Config.h` :
 ### Messages MQTT
 
 Les données sont publiées sur le topic :
-```
+
+```text
 sensors/{deviceID}/compact
 ```
 
 **Format binaire du message :**
-```
+
+```text
 [Device ID 1 octet][Flags 1 octet][Données variables]
 ```
 
@@ -210,6 +218,7 @@ def decode_sensor_data(payload):
 Pour activer les logs détaillés, assurez-vous que `DEBUG_ENABLED` est défini dans Config.h.
 
 Pour désactiver les logs en production, commentez cette ligne :
+
 ```cpp
 // #define DEBUG_ENABLED
 ```
@@ -219,23 +228,27 @@ Pour désactiver les logs en production, commentez cette ligne :
 ### Autonomie de la batterie
 
 Avec une batterie 1200mAh :
+
 - **Mode actif** : ~24h de fonctionnement continu
 - **Mode deep sleep** : ~3-6 mois d'autonomie (selon la fréquence des réveils)
 
 ### Réglages pour économiser l'énergie
 
 1. **Augmenter l'intervalle de deep sleep** :
+
    ```cpp
    #define SLEEP_TIME 600000  // 10 minutes au lieu de 5
    ```
 
 2. **Augmenter les seuils de détection** :
+
    ```cpp
    #define TEMP_THRESHOLD 1.0   // Moins sensible
    #define HUM_THRESHOLD 5.0    // Moins sensible
    ```
 
 3. **Augmenter l'intervalle maximal** :
+
    ```cpp
    #define MAX_NO_SEND_INTERVAL 7200000  // 2 heures au lieu d'1
    ```
@@ -252,6 +265,7 @@ Avec une batterie 1200mAh :
 ### Réinitialisation des données
 
 Pour effacer les données stockées en mémoire flash :
+
 ```cpp
 storageManager.resetData();
 provisionManager.forceNewRequest();
@@ -260,13 +274,14 @@ provisionManager.forceNewRequest();
 ### Monitoring
 
 Le système fournit des informations de diagnostic via :
+
 - Messages série (si DEBUG_ENABLED)
 - Statut dans les messages MQTT
 - LED de statut sur la carte
 
 ## Architecture des fichiers
 
-```
+```text
 MQTTSensorClient/
 ├── MQTTSensorClient.ino     # Programme principal
 ├── Config.h                 # Configuration globale

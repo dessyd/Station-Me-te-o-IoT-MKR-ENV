@@ -3,10 +3,6 @@
 // Définition du stockage flash (DOIT être en dehors de la classe)
 FlashStorage(flash_store, StoredData);
 
-StorageManager::StorageManager() {
-  // Constructeur - rien de spécial à faire
-}
-
 void StorageManager::saveData(const SensorManager::SensorReadings& lastReadings,
                             bool forceSendAll,
                             unsigned long lastSendTime) {

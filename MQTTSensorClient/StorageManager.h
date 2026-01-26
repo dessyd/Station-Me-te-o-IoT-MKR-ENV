@@ -19,12 +19,6 @@ extern FlashStorageClass<StoredData> flash_store;
 
 class StorageManager {
   public:
-    // Utilisation de la structure StoredData définie globalement
-    // (pas de typedef nécessaire)
-    
-    // Constructeur
-    StorageManager();
-    
     // Sauvegarder les données en mémoire flash
     void saveData(const SensorManager::SensorReadings& lastReadings,
                   bool forceSendAll,

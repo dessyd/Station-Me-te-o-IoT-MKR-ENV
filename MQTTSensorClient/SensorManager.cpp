@@ -50,28 +50,6 @@ SensorManager::SensorReadings SensorManager::readAll() {
   return readings;
 }
 
-bool SensorManager::hasSignificantChanges(float newTemp, float oldTemp,
-                                        float newHum, float oldHum,
-                                        float newPres, float oldPres,
-                                        float newLux, float oldLux,
-                                        float newUva, float oldUva,
-                                        float newUvb, float oldUvb,
-                                        float newUvi, float oldUvi,
-                                        float newBat, float oldBat) {
-  
-  // Vérifier chaque type de capteur selon son seuil
-  if (abs(newTemp - oldTemp) >= TEMP_THRESHOLD) return true;
-  if (abs(newHum - oldHum) >= HUM_THRESHOLD) return true;
-  if (abs(newPres - oldPres) >= PRES_THRESHOLD) return true;
-  if (abs(newLux - oldLux) >= LUX_THRESHOLD) return true;
-  if (abs(newUva - oldUva) >= UV_THRESHOLD) return true;
-  if (abs(newUvb - oldUvb) >= UV_THRESHOLD) return true;
-  if (abs(newUvi - oldUvi) >= UVI_THRESHOLD) return true;
-  if (abs(newBat - oldBat) >= BAT_THRESHOLD) return true;
-  
-  return false;
-}
-
 float SensorManager::readBatteryVoltage() {
   // Lecture de la tension de la batterie via le diviseur de tension interne
   // Sur MKR, la tension de batterie est accessible via ADC_BATTERY

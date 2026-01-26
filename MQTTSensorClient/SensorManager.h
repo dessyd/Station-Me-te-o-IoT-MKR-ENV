@@ -23,17 +23,7 @@ class SensorManager {
     
     // Lecture de tous les capteurs
     SensorReadings readAll();
-    
-    // Vérification des changements significatifs
-    bool hasSignificantChanges(float newTemp, float oldTemp,
-                              float newHum, float oldHum,
-                              float newPres, float oldPres,
-                              float newLux, float oldLux,
-                              float newUva, float oldUva,
-                              float newUvb, float oldUvb,
-                              float newUvi, float oldUvi,
-                              float newBat, float oldBat);
-    
+
   private:
     // Lecture de la tension de la batterie
     float readBatteryVoltage();

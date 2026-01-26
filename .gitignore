@@ -35,6 +35,7 @@ Thumbs.db
 .vscode/
 .idea/
 *.sublime-*
+.claude/
 
 # Logs et fichiers de debug
 *.log

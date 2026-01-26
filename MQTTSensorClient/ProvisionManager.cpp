@@ -248,17 +248,16 @@ void ProvisionManager::initializeMACAddress() {
 bool ProvisionManager::validateBrokerIP(const char* ip) {
   // Validation basique du format IP
   int dots = 0;
-  int numbers = 0;
   int currentNumber = 0;
   bool hasDigit = false;
-  
+
   for (int i = 0; ip[i] != '\0'; i++) {
     char c = ip[i];
-    
+
     if (c >= '0' && c <= '9') {
       currentNumber = currentNumber * 10 + (c - '0');
       hasDigit = true;
-      
+
       // Vérifier que le nombre n'est pas trop grand
       if (currentNumber > 255) {
         return false;
@@ -268,7 +267,6 @@ bool ProvisionManager::validateBrokerIP(const char* ip) {
         return false;
       }
       dots++;
-      numbers++;
       currentNumber = 0;
       hasDigit = false;
     } else {
@@ -276,12 +274,6 @@ bool ProvisionManager::validateBrokerIP(const char* ip) {
       return false;
     }
   }
-  
-  // Vérifier le format final
-  if (dots == 3 && hasDigit) {
-    numbers++; // Compter le dernier nombre
-    return (numbers == 4);
-  }
-  
-  return false;
+
+  return (dots == 3 && hasDigit);
 }

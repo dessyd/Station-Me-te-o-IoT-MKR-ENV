@@ -16,8 +16,6 @@ unsigned long calculateTimeSinceLastSend(unsigned long currentTime);
 void printSensorReadings(const SensorManager::SensorReadings& readings);
 void printSystemStatus(unsigned long currentTime, unsigned long timeSinceLastSend);
 void signalError();
-void printMemoryInfo();
-void testAllSensors();
 
 // ===================================================================
 // STATION MÉTÉO IoT - MKR ENV SHIELD
@@ -137,9 +135,6 @@ void setup() {
   // Afficher le statut initial
   provisionManager.printStatus();
   
-  // Marquer la fin du premier boot
-  firstBoot = true;
-  
   DEBUG_PRINTLN("==================================================");
   DEBUG_PRINTLN("Setup terminé - Début du cycle principal");
   DEBUG_PRINTLN("==================================================\n");
@@ -193,16 +188,10 @@ void loop() {
   // ===============================
   
   // Vérifier s'il y a des changements significatifs
-  bool anyChange = sensorManager.hasSignificantChanges(
-    currentReadings.temperature, lastReadings.temperature,
-    currentReadings.humidity, lastReadings.humidity,
-    currentReadings.pressure, lastReadings.pressure,
-    currentReadings.illuminance, lastReadings.illuminance,
-    currentReadings.uva, lastReadings.uva,
-    currentReadings.uvb, lastReadings.uvb,
-    currentReadings.uvindex, lastReadings.uvindex,
-    currentReadings.battery, lastReadings.battery
-  );
+  DataEncoder::ChangedFlags changes = dataEncoder.detectChanges(currentReadings, lastReadings);
+  bool anyChange = changes.temperature || changes.humidity || changes.pressure ||
+                   changes.illuminance || changes.uva || changes.uvb ||
+                   changes.uvindex || changes.battery;
   
   // Calculer le temps écoulé depuis le dernier envoi
   unsigned long timeSinceLastSend = calculateTimeSinceLastSend(currentTime);
@@ -335,16 +324,8 @@ bool transmitData(const SensorManager::SensorReadings& currentReadings, unsigned
 }
 
 unsigned long calculateTimeSinceLastSend(unsigned long currentTime) {
-  if (lastSendTime == 0) {
-    return MAX_NO_SEND_INTERVAL + 1; // Forcer l'envoi si jamais envoyé
-  }
-  
-  // Gérer le cas du débordement de millis() (après ~49 jours)
-  if (currentTime < lastSendTime) {
-    return currentTime + (0xFFFFFFFF - lastSendTime);
-  } else {
-    return currentTime - lastSendTime;
-  }
+  if (lastSendTime == 0) return MAX_NO_SEND_INTERVAL + 1;
+  return currentTime - lastSendTime;  // Unsigned subtraction handles overflow
 }
 
 void printSensorReadings(const SensorManager::SensorReadings& readings) {
@@ -450,51 +431,3 @@ void signalError() {
   LowPower.deepSleep(60000); // 1 minute avant retry
 }
 
-// ===================================================================
-// FONCTIONS DE DIAGNOSTIC (optionnelles)
-// ===================================================================
-
-void printMemoryInfo() {
-  // Cette fonction peut être appelée pour diagnostiquer l'usage mémoire
-  DEBUG_PRINTLN("=== DIAGNOSTIC MÉMOIRE ===");
-  DEBUG_PRINT("Taille SensorReadings: ");
-  DEBUG_PRINT(sizeof(SensorManager::SensorReadings));
-  DEBUG_PRINTLN(" octets");
-  
-  DEBUG_PRINT("Taille StoredData: ");
-  DEBUG_PRINT(sizeof(StoredData));
-  DEBUG_PRINTLN(" octets");
-  
-  DEBUG_PRINT("Variables globales: ~");
-  DEBUG_PRINT(sizeof(lastReadings) + sizeof(forceSendAll) + sizeof(lastSendTime) + sizeof(firstBoot));
-  DEBUG_PRINTLN(" octets");
-  
-  DEBUG_PRINTLN("========================");
-}
-
-void testAllSensors() {
-  // Fonction de test pour vérifier tous les capteurs
-  DEBUG_PRINTLN("=== TEST DES CAPTEURS ===");
-  
-  for (int i = 0; i < 5; i++) {
-    SensorManager::SensorReadings test = sensorManager.readAll();
-    
-    DEBUG_PRINT("Test ");
-    DEBUG_PRINT(i + 1);
-    DEBUG_PRINT(": T=");
-    DEBUG_PRINT(test.temperature);
-    DEBUG_PRINT("°C, H=");
-    DEBUG_PRINT(test.humidity);
-    DEBUG_PRINT("%, P=");
-    DEBUG_PRINT(test.pressure);
-    DEBUG_PRINT("kPa, L=");
-    DEBUG_PRINT(test.illuminance);
-    DEBUG_PRINT("lux, B=");
-    DEBUG_PRINT(test.battery);
-    DEBUG_PRINTLN("V");
-    
-    delay(1000);
-  }
-  
-  DEBUG_PRINTLN("=====================");
-}

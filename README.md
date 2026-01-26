@@ -25,28 +25,16 @@ Cette documentation détaille l'implémentation d'une station météo IoT basée
 
 Le projet est conçu selon une architecture modulaire qui sépare les différentes responsabilités du système :
 
-```
-┌─────────────────────────────────────────┐
-│              Application                │
-│     (MQTTSensorClient.ino - setup/loop) │
-└─────────────┬───────────┬───────────────┘
-    ┌─────────┴────────┐  │  ┌─────────────────────┐
-    │  ProvisionManager│  │  │   StorageManager    │
-    │  (Obtention ID)  │  │  │(Persistance données)│
-    └─────────┬────────┘  │  └─────────┬───────────┘
-     ┌────────┴────────┐  │   ┌────────┴────────┐
-     │  NetworkManager │  │   │  SensorManager  │
-     │(WiFi/MQTT Comm.)│  │   │(Lecture capteurs)│
-     └────────┬────────┘  │   └────────┬────────┘
-            ┌─┴───────────┴────────────┴─┐
-            │        DataEncoder         │
-            │ (Formatage binaire compact)│
-            └───────────────────────────┘
-                        │
-      ┌─────────────────┴──────────────────┐
-      │              Config                │
-      │   (Configuration globale partagée) │
-      └────────────────────────────────────┘
+```mermaid
+flowchart TD
+    A["Application<br/>(MQTTSensorClient.ino)"] --> B["ProvisionManager<br/>(Obtention ID)"]
+    A --> C["StorageManager<br/>(Persistance données)"]
+    A --> D["NetworkManager<br/>(WiFi/MQTT Comm.)"]
+    A --> E["SensorManager<br/>(Lecture capteurs)"]
+    B --> F["DataEncoder<br/>(Formatage binaire compact)"]
+    D --> F
+    E --> F
+    F --> G["Config<br/>(Configuration globale)"]
 ```
 
 Cette architecture permet :
@@ -109,10 +97,11 @@ struct SensorReadings {
 **Méthodes clés :**
 
 ```cpp
-bool begin();                    // Initialisation des capteurs
-SensorReadings readAll();        // Lecture de tous les capteurs
-bool hasSignificantChanges(...); // Détection des changements
+bool begin();             // Initialisation des capteurs
+SensorReadings readAll(); // Lecture de tous les capteurs
 ```
+
+> **Note :** La détection des changements significatifs est gérée par le module `DataEncoder` via la méthode `detectChanges()`.
 
 ### Module NetworkManager
 
@@ -231,6 +220,7 @@ bool isProvisioned();
 uint8_t getDeviceID();
 const char* getMQTTBroker();
 void update();
+void printStatus();  // Affiche l'état du provisionnement (debug)
 ```
 
 ## Structures de données
@@ -288,38 +278,43 @@ Le format des messages a été optimisé pour minimiser la quantité de données
 
 ### Structure du message binaire
 
-```
-┌───────────┬───────────┬───────────────────────────────────┐
-│ Device ID │  Flags    │ Valeurs (variables selon flags)   │
-│ (1 octet) │ (1 octet) │ (0-8 octets selon les flags)      │
-└───────────┴───────────┴───────────────────────────────────┘
+```mermaid
+packet-beta
+  0-7: "Device ID (1 octet)"
+  8-15: "Flags (1 octet)"
+  16-79: "Valeurs (0-8 octets selon flags)"
 ```
 
 ### Octet de flags
 
 Chaque bit de l'octet de flags indique si une valeur est présente dans le message :
 
-```
-┌─────┬─────┬─────┬─────┬─────┬─────┬─────┬─────┐
-│ Bat │ UVI │ UVB │ UVA │ Lux │ Pres│ Hum │ Temp│
-│ bit7│ bit6│ bit5│ bit4│ bit3│ bit2│ bit1│ bit0│
-└─────┴─────┴─────┴─────┴─────┴─────┴─────┴─────┘
+```mermaid
+packet-beta
+  0: "Temp"
+  1: "Hum"
+  2: "Pres"
+  3: "Lux"
+  4: "UVA"
+  5: "UVB"
+  6: "UVI"
+  7: "Bat"
 ```
 
 ### Encodage des valeurs
 
 Chaque valeur est encodée sur un seul octet pour maximiser l'efficacité :
 
-| Valeur       | Encodage                                | Plage couverte          |
-|--------------|----------------------------------------|-------------------------|
-| Température  | `Valeur * 10` ou `256 + (Valeur * 10)` pour valeurs négatives | -25.5 à +25.5 °C     |
-| Humidité     | `Valeur` directe                       | 0 à 100 %              |
-| Pression     | `(Valeur - 90) * 10`                   | 90 à 115.5 kPa         |
-| Luminosité   | `Valeur / 10`                          | 0 à 2550 lux           |
-| UVA          | `Valeur` directe                       | 0 à 255                |
-| UVB          | `Valeur` directe                       | 0 à 255                |
-| UV Index     | `Valeur * 100`                         | 0 à 2.55               |
-| Batterie     | `(Valeur - 2) * 100`                   | 2 à 4.55 V             |
+| Valeur      | Encodage                                                      | Plage couverte   |
+|-------------|---------------------------------------------------------------|------------------|
+| Température | `Valeur * 10` ou `256 + (Valeur * 10)` pour valeurs négatives | -25.5 à +25.5 °C |
+| Humidité    | `Valeur` directe                                              | 0 à 100 %        |
+| Pression    | `(Valeur - 90) * 10`                                          | 90 à 115.5 kPa   |
+| Luminosité  | `Valeur / 10`                                                 | 0 à 2550 lux     |
+| UVA         | `Valeur` directe                                              | 0 à 255          |
+| UVB         | `Valeur` directe                                              | 0 à 255          |
+| UV Index    | `Valeur * 100`                                                | 0 à 2.55         |
+| Batterie    | `(Valeur - 2) * 100`                                          | 2 à 4.55 V       |
 
 Cette approche permet de réduire considérablement la taille des messages (jusqu'à 97% par rapport à JSON) tout en maintenant une précision suffisante.
 
@@ -327,44 +322,20 @@ Cette approche permet de réduire considérablement la taille des messages (jusq
 
 Le flux d'exécution du système est optimisé pour minimiser la consommation d'énergie tout en assurant la fiabilité des données :
 
-```
-┌────────────────┐
-│    Démarrage   │
-└───────┬────────┘
-        │
-┌───────▼───────┐      ┌────────────────┐
-│ Initialisation├─────►│Provisionnement │
-└───────┬───────┘      └────────┬───────┘
-        │                       │
-┌───────▼───────┐      ┌────────▼───────┐
-│Lecture données│◄─────┤    Réveil      │
-└───────┬───────┘      └────────▲───────┘
-        │                       │
-┌───────▼────────────┐          │
-│Détection changement│          │
-└───────┬────────────┘          │
-        │                       │
-    ┌───▼───┐                   │
-    │ Envoi?│───Non─────┐       │
-    └───┬───┘           │       │
-        │Oui            │       │
-┌───────▼────────┐  ┌───▼───────▼──┐
-│  Encodage      │  │  Deep Sleep  │
-└───────┬────────┘  └──────────────┘
-        │
-┌───────▼────────┐
-│  WiFi + MQTT   │
-└───────┬────────┘
-        │
-┌───────▼────────┐
-│Envoi + Stockage│
-└───────┬────────┘
-        │
-┌───────▼────────┐
-│ Déconnexion    │
-└───────┬────────┘
-        │
-        ▼
+```mermaid
+flowchart TD
+    A[Démarrage] --> B[Initialisation]
+    B --> C[Provisionnement]
+    C --> D[Lecture données]
+    D --> E[Détection changement]
+    E --> F{Envoi?}
+    F -->|Non| G[Deep Sleep]
+    F -->|Oui| H[Encodage]
+    H --> I[WiFi + MQTT]
+    I --> J[Envoi + Stockage]
+    J --> K[Déconnexion]
+    K --> G
+    G -->|Réveil| D
 ```
 
 ### Particularités du flux
@@ -474,28 +445,16 @@ Le système utilise un mécanisme de provisionnement sécurisé pour obtenir un 
 
 ### Processus de provisionnement
 
-```
-┌───────────┐                           ┌─────────────────┐
-│  Arduino  │                           │Serveur Provision│
-└─────┬─────┘                           └────────┬────────┘
-      │                                          │
-      │ 1. Génère token aléatoire ECCX08         │
-      ├─────────────────────────────────────────►│
-      │    UDP: [MAC]:[Token binaire 4 octets]   │
-      │                                          │
-      │                                          │ 2. Attribue ID
-      │                                          │    Enregistre MAC
-      │                                          │
-      │ 3. Vérifie token reçu                    │
-      │◄─────────────────────────────────────────┤
-      │    UDP: [ID 1 octet][Token][MQTT_IP]     │
-      │                                          │
-      │ 4. Stocke ID et IP                       │
-      │    Configure MQTT client                 │
-      │                                          │
-┌─────┴─────┐                           ┌────────┴────────┐
-│  Arduino  │                           │Serveur Provision│
-└───────────┘                           └─────────────────┘
+```mermaid
+sequenceDiagram
+    participant A as Arduino
+    participant S as Serveur Provision
+    A->>A: 1. Génère token aléatoire ECCX08
+    A->>S: UDP: [MAC]:[Token binaire 4 octets]
+    S->>S: 2. Attribue ID, Enregistre MAC
+    S->>A: UDP: [ID 1 octet][Token][MQTT_IP]
+    A->>A: 3. Vérifie token reçu
+    A->>A: 4. Stocke ID et IP, Configure MQTT client
 ```
 
 ### Sécurité du provisionnement
@@ -525,11 +484,11 @@ Le système utilise MQTT comme protocole de communication principal avec le serv
 
 ### Format de réponse du serveur de provisionnement
 
-```
-┌───────────┬───────────┬───────────────────────┐
-│ Device ID │  Token    │ Adresse IP MQTT       │
-│ (1 octet) │ (4 octets)│ (variable)            │
-└───────────┴───────────┴───────────────────────┘
+```mermaid
+packet-beta
+  0-7: "Device ID (1 octet)"
+  8-39: "Token (4 octets)"
+  40-71: "Adresse IP MQTT (variable)"
 ```
 
 ## Guide d'utilisation
